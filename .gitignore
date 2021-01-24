@@ -1,4 +1,4 @@
 bin/
 .ipynb_checkpoints/
 src/.ipynb_checkpoints/
-*.jar
+./*.jar
