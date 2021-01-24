@@ -143,7 +143,7 @@ throws MqttException, RegistrationError
 * `push` : the idf name which data sent to.
 * `data` : 為`JSONArray`。可以透過`JSONArray r = new JSONArray(pushData)`，將所要送出的值打包。
 
-on_singal
+On Singal
 ---
 `public boolean on_signal(String command, String df)`
 
@@ -180,7 +180,7 @@ Constructor :
 * `df_type` : must be `idf` or `odf`
 * `paramtype` : 此df的變數格式ex:`{"g", "g", "g"}`。若無此項，default = `{null}`
 
-onData
+On Data
 ---
 `public void onData(MqttMessage message, String df_name, String df_type)`
 
@@ -189,7 +189,7 @@ onData
 * `df_name` : 該Device Feature的名稱
 * `df_type` : `idf` or `odf`
 
-publishData
+Publish Data
 ---
 ```
 public JSONArray publishData()
