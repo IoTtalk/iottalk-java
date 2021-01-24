@@ -52,6 +52,31 @@ public class DAN{
     private boolean isReconnectFlag;
     private boolean isRegisterFlag;
     
+    public class DANColor extends ColorBase{
+        public String logger = "\033[1;35m";
+    }
+    
+    public class ApplicationNotFoundError extends Exception{
+        public ApplicationNotFoundError(String s) 
+        { 
+            super(s); 
+        }
+    }
+    
+    public class RegistrationError extends Exception{
+        public RegistrationError(String s) 
+        { 
+            super(s); 
+        }
+    }
+    
+    public class AttributeNotFoundError extends Exception{
+        public AttributeNotFoundError(String s) 
+        { 
+            super(s); 
+        }
+    }
+    
     public static boolean _invalid_url(String url){
         if (url == null){
             return true;
@@ -247,13 +272,13 @@ public class DAN{
         on_connect(); //call custom on_connect
     }
     
-    public boolean push(String dfname, JSONArray data)throws MqttException, RegistrationError{
+    public boolean push(String idfName, JSONArray data)throws MqttException, RegistrationError{
         //check if client is connected
         if (client.isConnected() == false){
             throw new RegistrationError("Not registered");
         }
         
-        String pubTopic = iChans.getTopic(dfname);
+        String pubTopic = iChans.getTopic(idfName);
         if (pubTopic == null){
             return false;  //topic not found
         }

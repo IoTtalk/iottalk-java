@@ -58,6 +58,10 @@ public class DAI extends Thread{
     private Map<String, Timer> pushDataTimerMap;
     private Map<String, DeviceFeature> dfMap;
     
+    public class DAIColor extends ColorBase{
+        public String logger = "\033[1;34m";
+    }
+    
     public DAI(Object _sa){
         sa = _sa;
         pushDataTimerMap = new HashMap<>();
@@ -134,7 +138,7 @@ public class DAI extends Thread{
     }
     
     private boolean _on_signal(String command, String df){
-        logger.info("Receive signal: "+DAIColor.wrap(DANColor.dataString, command)+", "+df+".");
+        logger.info("Receive signal: "+DAIColor.wrap(DAIColor.dataString, command)+", "+df+".");
         if (command.equals("CONNECT")){
             if (pushDataTimerMap.containsKey(df)){
                 return true;  //already connect
@@ -160,7 +164,7 @@ public class DAI extends Thread{
                           me.printStackTrace();
                       } catch(JSONException je){
                           je.printStackTrace();
-                      } catch(RegistrationError re){
+                      } catch(DAN.RegistrationError re){
                           re.printStackTrace();
                       }
                   }
