@@ -48,7 +48,7 @@ public class DAI extends Thread{
     private boolean persistentBinding = false;
     private String userName = null;
     private double pushInterval;
-    private Map<String, String> intervalMap;
+    private Map<String, Double> intervalMap;
     
     private Method onRegisterMethod;
     private Method onDeregisterMethod;
@@ -108,7 +108,7 @@ public class DAI extends Thread{
                 pushInterval = (double)(fields[i].get(sa));
             }
             else if (vName.equals("interval")){
-                intervalMap = (Map<String, String>)(fields[i].get(sa));
+                intervalMap = (Map<String, Double>)(fields[i].get(sa));
             }
             //collect DeviceFeatures
             else if (cType == DeviceFeature.class){
@@ -146,11 +146,7 @@ public class DAI extends Thread{
             DeviceFeature dft = dfMap.get(df);
             if (dft.isIDF()){
                 //count timer interval time
-                double ti = pushInterval;
-                if (intervalMap.containsKey(df)){
-                    String tt = intervalMap.get(df);
-                    ti *= Double.parseDouble(tt);
-                }
+                double ti = intervalMap.getOrDefault(df, new Double(pushInterval));
                 ti *= 1000;
                 
                 Timer timer = new Timer();
@@ -272,7 +268,7 @@ public class DAI extends Thread{
             //busy wait
             //FIXME : use other impletation, this will block for a will
             while(true){
-                java.util.concurrent.TimeUnit.SECONDS.sleep(1);
+                java.util.concurrent.TimeUnit.MILLISECONDS.sleep(10);
                 if (aliveFlag == false){
                     break;
                 }
