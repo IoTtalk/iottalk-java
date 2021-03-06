@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import java.net.URL;
 import java.net.HttpURLConnection;
@@ -281,6 +282,12 @@ public class DAN{
         String pubTopic = iChans.getTopic(idfName);
         if (pubTopic == null){
             return false;  //topic not found
+        }
+        
+        if (data.length() == 1){
+          Object data_0 = (Object)data.get(0);
+          if (JSONObject.NULL.equals(data_0))
+            return true;
         }
         
         IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 2, true);
