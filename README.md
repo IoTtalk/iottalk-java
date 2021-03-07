@@ -5,8 +5,8 @@
 
 ## 需要的函式庫
 已經有放在資料夾`libs`裡面了，不用另外下載。
-* [org.json](https://mvnrepository.com/artifact/org.json/json)
-* [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5)
+* [org.json](https://mvnrepository.com/artifact/org.json/json) : 版本需求 >= 20131018
+* [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5) : 版本需求 == 1.2.5
 
 ## 如何使用
 有兩種方法。可以`使用SA版本`，或是`自行撰寫DAI`
