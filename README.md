@@ -234,9 +234,9 @@ Constructor :
 1. `public AppID()`
 2. `public AppID(String uuidHexDigitString)`
 3. `public AppID(String uuidHexDigitString, boolean _persistent_binding)`
-* `uuidHexDigitString` : 自訂的UUID，需為Hex String。ex : `aaaaa1234567890abcdef`
+* `uuidHexDigitString` : 自訂的mac_addr，需為Hex String。ex : `aaaaa1234567890abcdef`
 
-| `UUID`\\`persistent_binding` | `true` | `false` |
+| `mac_addr`\\`persistent_binding` | `true` | `false` |
 | -------- | -------- | -------- |
 | 隨機生成   | \<Forbidden\>     |   Constructor `1`   |
 | 自訂     | Constructor `2`  | Constructor `3`      |
