@@ -1,5 +1,8 @@
 package iottalk;
 
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
 import java.lang.Thread;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
@@ -27,13 +30,20 @@ import java.io.InterruptedIOException;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URLClassLoader;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
 public class DAI extends Thread{
-    private Logger logger = Logger.getLogger("DAI");
+    
+    private static Logger logger = null;
+    static {
+      System.setProperty("java.util.logging.SimpleFormatter.format",
+              "[%1$tF %1$tT] [%4$s] [%3$s] %5$s %n");
+      logger = Logger.getLogger("DAI");
+    }
     
     private boolean aliveFlag;
     private Object sa;
@@ -66,9 +76,7 @@ public class DAI extends Thread{
         sa = _sa;
         pushDataTimerMap = new HashMap<>();
         dfMap = new HashMap<>();
-        //Set log format
-        System.setProperty("java.util.logging.SimpleFormatter.format",
-              "[%1$tT] [%4$s] %5$s %n");
+              
     }
     
     public void terminate(){
@@ -280,5 +288,46 @@ public class DAI extends Thread{
         } catch (Exception e){
             e.printStackTrace();
         }
+    }
+    
+    public static void main(String[] args)throws Exception{
+        String saURL = "";
+        String saClassName = "";
+        if (args.length > 0){
+            String splitPath[] = args[0].split("/");
+            if (splitPath.length == 1){
+                saURL = "file:./";
+                saClassName = splitPath[0].split(".class")[0];
+            }
+            else{
+                saURL = "file:"+splitPath[0]+"/";
+                for (int i=1; i<splitPath.length-1; i++){
+                    saURL = saURL+splitPath[i]+"/";
+                }
+                saClassName = splitPath[splitPath.length-1].split(".class")[0];
+            }
+            URL url = new URL(saURL);
+            ClassLoader urlClassLoader = new URLClassLoader(new URL[] {url});
+            Class c = urlClassLoader.loadClass(saClassName);
+            Object sa = c.getConstructor().newInstance();
+            logger.info("Successfully load SA from "+DAIColor.wrap(DAIColor.dataString, saURL+saClassName)+".");
+
+            DAI dai = new DAI(sa);
+
+            //Set signal handler to catch Ctrl+C
+            Signal.handle(new Signal("INT"), new SignalHandler() {
+                public void handle(Signal sig) {
+                    //System.out.println("Interrupt");
+                    dai.terminate();
+                }
+            });
+            dai.start();
+            dai.join();
+        }
+        else{
+            logger.severe("SA path is null.");
+            logger.severe("Use "+DAIColor.wrap(DAIColor.dataString, "\"java -cp <JAR PATH> iottalk.DAI SA=<SA CLASS PATH>\""+"."));
+        }
+        
     }
 }

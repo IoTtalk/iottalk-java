@@ -32,7 +32,12 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 public class DAN{
-    private Logger logger = Logger.getLogger("DAN");
+    private static Logger logger = null;
+    static {
+      System.setProperty("java.util.logging.SimpleFormatter.format",
+              "[%1$tT] [%4$s] %5$s %n");
+      logger = Logger.getLogger("DAN");
+    }
     
     private String csmEndpoint;
     private String[] acceptProtos;
@@ -99,6 +104,8 @@ public class DAN{
                String _name, 
                JSONObject _profile)
         throws JSONException, RegistrationError  {
+        
+        
         isRegisterFlag = false;
         csmEndpoint = _csmUrl;
         acceptProtos = _acceptProtos;
