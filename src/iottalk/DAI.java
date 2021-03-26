@@ -145,7 +145,7 @@ public class DAI extends Thread{
         }
     }
     
-    private boolean _on_signal(String command, String df){
+    private boolean onSignal(String command, String df){
         logger.info("Receive signal: "+DAIColor.wrap(DAIColor.dataString, command)+", "+df+".");
         if (command.equals("CONNECT")){
             if (pushDataTimerMap.containsKey(df)){
@@ -162,7 +162,7 @@ public class DAI extends Thread{
                   @Override
                   public void run() {
                       try{
-                          JSONArray pushDataJSONArray = dft.publishData();
+                          JSONArray pushDataJSONArray = dft.getPushData();
                           dan.push(df, pushDataJSONArray);
                       } catch(MqttException me){
                           me.printStackTrace();
@@ -247,24 +247,24 @@ public class DAI extends Thread{
             //new dan
             dan = new DAN(csmEndpoint, acceptProtos, dfList, appId, dName, putBodyPorfile){
                 @Override
-                public boolean on_signal(String command, String df){
+                public boolean onSignal(String command, String df){
                     //return true;
-                    return _on_signal(command, df);
+                    return this.onSignal(command, df);
                 }
                 @Override
-                public void on_register(){
+                public void onRegister(){
                     invokeMethod(onRegisterMethod);
                 }
                 @Override
-                public void on_deregister(){
+                public void onDeregister(){
                     invokeMethod(onDeregisterMethod);
                 }
                 @Override
-                public void on_connect(){
+                public void onConnect(){
                     invokeMethod(onConnectMethod);
                 }
                 @Override
-                public void on_disconnect(){
+                public void onDisconnect(){
                     invokeMethod(onDisconnectMethod);
                 }
             };
@@ -325,8 +325,7 @@ public class DAI extends Thread{
             dai.join();
         }
         else{
-            logger.severe("SA path is null.");
-            logger.severe("Use "+DAIColor.wrap(DAIColor.dataString, "\"java -cp <JAR PATH> iottalk.DAI SA=<SA CLASS PATH>\""+"."));
+            throw new IllegalArgumentException("SA path is null. Use \"java -cp <JAR PATH> iottalk.DAI <SA CLASS PATH>\".");
         }
         
     }

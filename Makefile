@@ -14,9 +14,11 @@ iottalk.jar: $(BINS)
 	jar cfe iottalk.jar iottalk.DAI iottalk/* && \
 	mv iottalk.jar .. 
 
+compile: $(BINS)
+
 $(BINS_DIR)/%.class: $(SRC_DIR)/%.java
 	  mkdir -p bin
-	  $(JC) $(CPFLAG) $(DFLAG) $(SRCS)
+	  $(JC) $(CPFLAG) $(DFLAG) -Xlint:none $(SRCS)
 
 clean:
 	@if [ -f iottalk.jar ] ; then \

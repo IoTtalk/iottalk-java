@@ -152,10 +152,10 @@ public class DAN{
     }
     
     /*
-    Custom on_register
+    Custom onRegister
     Can be overrided when init DAN
     */
-    public void on_register(){
+    public void onRegister(){
         return;
     }
 
@@ -210,8 +210,8 @@ public class DAN{
             reader.close();
             conn.disconnect();
             
-            on_register();
-            MqttConnect();
+            onRegister();
+            connect();
         } catch(JSONException e){
             throw new RegistrationError("Invalid response from server");
         } catch(MalformedURLException e){
@@ -219,7 +219,7 @@ public class DAN{
         }
     }
     
-    private void MqttConnect()
+    private void connect()
         throws JSONException, MqttException, Exception
     {
         String mqttEndpoint = "tcp://"+mqttHost+":"+mqttPort;
@@ -234,25 +234,25 @@ public class DAN{
         //connect and wait
         IMqttToken token = client.connect(options);
         token.waitForCompletion();
-        OnConnect();
+        subCtrlChans();
     }
     
     /*
-    Custom on_connect
+    Custom onConnect
     Can be overrided when init DAN
     */
-    public void on_connect(){
+    public void onConnect(){
         return;
     }
     
-    private void OnConnect() throws Exception{
+    private void subCtrlChans() throws Exception{
         IMqttToken token;
         if (isReconnectFlag == false){
             logger.info("Successfully connect to "+DANColor.wrap(DANColor.dataString, csmEndpoint)+".");
             logger.info("Device ID: "+DANColor.wrap(DANColor.dataString, appID.toString())+".");
             logger.info("Device name: "+DANColor.wrap(DANColor.dataString, dName)+".");
             try{
-                token = client.subscribe(oChans.getTopic("ctrl"), 2, ctrlChansOmessageListener);
+                token = client.subscribe(oChans.getTopic("ctrl"), 2, ctrlChansCB);
             }catch(MqttException e){
                 throw new Exception("Subscribe to control channel failed");
             }
@@ -277,7 +277,7 @@ public class DAN{
         token.waitForCompletion();
         
         isReconnectFlag = true;
-        on_connect(); //call custom on_connect
+        onConnect(); //call custom onConnect
     }
     
     public boolean push(String idfName, JSONArray data)throws MqttException, RegistrationError{
@@ -303,11 +303,11 @@ public class DAN{
     }
     
     /*
-    Custom on_signal
+    Custom onSignal
     Can be overrided when init DAN
     */
     //FIX ME return Array (true), (false, reson)
-    public boolean on_signal(String command, String df){
+    public boolean onSignal(String command, String df){
         ArrayList<Object> r = new ArrayList<Object>();
         r.add(true);
         r.add("default");
@@ -315,7 +315,7 @@ public class DAN{
     }
     
     // Set control channel calback
-    IMqttMessageListener ctrlChansOmessageListener = new IMqttMessageListener() {
+    IMqttMessageListener ctrlChansCB = new IMqttMessageListener() {
             @Override
             public void messageArrived(String topic, MqttMessage message)
                 throws JSONException, MqttException
@@ -331,14 +331,14 @@ public class DAN{
                         String pubTopic = messageJSON.getString("topic");
                         String name = messageJSON.getString("idf");
                         iChans.set(name, pubTopic);
-                        handlingResult = on_signal(command, name); //call custom on_signal
+                        handlingResult = onSignal(command, name); //call custom onSignal
                     }
                     else if(messageJSON.has("odf")){
                         String subTopic = messageJSON.getString("topic");
                         String name = messageJSON.getString("odf");
                         oChans.set(name, subTopic);
                         DeviceFeature dft = oChans.getDFCbyName(name);
-                        handlingResult = on_signal(command, name); //call custom on_signal
+                        handlingResult = onSignal(command, name); //call custom onSignal
                         client.subscribe(subTopic, 0, dft.getCallBack());
                     }
                 }
@@ -348,14 +348,14 @@ public class DAN{
                     if (messageJSON.has("idf")){
                         String name = messageJSON.getString("idf");
                         iChans.remove(name);
-                        handlingResult = on_signal(command, name); //call custom on_signal
+                        handlingResult = onSignal(command, name); //call custom onSignal
                     }
                     else if(messageJSON.has("odf")){
                         String name = messageJSON.getString("odf");
                         String subTopic = oChans.getTopic(name);
                         oChans.remove(name);
                         client.unsubscribe(subTopic);
-                        handlingResult = on_signal(command, name); //call custom on_signal
+                        handlingResult = onSignal(command, name); //call custom onSignal
                     }
                 }
                 JSONObject publishBody = new JSONObject();
@@ -375,10 +375,10 @@ public class DAN{
         };
     
     /*
-    Custom on_disconnect
+    Custom onDisconnect
     Can be overrided when init DAN
     */
-    public void on_deregister(){
+    public void onDeregister(){
         return;
     }
     
@@ -431,7 +431,7 @@ public class DAN{
             conn.disconnect();
             
             isRegisterFlag = false;
-            on_deregister();  //call custom on_deregister
+            onDeregister();  //call custom onDeregister
             
             //FIXME : return degister result
             JSONObject metadata = new JSONObject(responseString);
@@ -443,10 +443,10 @@ public class DAN{
     }
     
     /*
-    Custom on_disconnect
+    Custom onDisconnect
     Can be overrided when init DAN
     */
-    public void on_disconnect(){
+    public void onDisconnect(){
         return;
     }
     
@@ -471,12 +471,12 @@ public class DAN{
             token.waitForCompletion();
             IMqttToken t = client.disconnect();
             t.waitForCompletion(5000);
-            on_disconnect();
+            onDisconnect();
         }
         else{
             IMqttToken t = client.disconnect();
             t.waitForCompletion(5000);
-            on_disconnect(); //call custom on_disconnect
+            onDisconnect(); //call custom onDisconnect
             deregister();    //deregister this device
         }
         
