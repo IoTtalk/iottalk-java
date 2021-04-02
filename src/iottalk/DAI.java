@@ -271,7 +271,7 @@ public class DAI extends Thread{
             
             dan.register();
             
-            logger.info("Successfully connect to "+DAIColor.wrap(DAIColor.dataString, "Press Ctrl+C to exit DAI")+".");
+            logger.info("Press Ctrl+C to exit DAI.");
             
             //busy wait
             //FIXME : use other impletation, this will block for a will
@@ -318,11 +318,13 @@ public class DAI extends Thread{
             Signal.handle(new Signal("INT"), new SignalHandler() {
                 public void handle(Signal sig) {
                     //System.out.println("Interrupt");
+                    System.out.println("");
                     dai.terminate();
                 }
             });
             dai.start();
             dai.join();
+            logger.info(DAIColor.wrap(DAIColor.dataString, "Terminate")+".");
         }
         else{
             throw new IllegalArgumentException("SA path is null. Use \"java -cp <JAR PATH> iottalk.DAI <SA CLASS PATH>\".");

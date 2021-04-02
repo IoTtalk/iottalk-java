@@ -435,6 +435,8 @@ public class DAN{
             
             //FIXME : return degister result
             JSONObject metadata = new JSONObject(responseString);
+            
+            logger.info("Successfully deregister.");
         } catch(JSONException e){
             throw new RegistrationError("Invalid response from server");
         } catch(MalformedURLException e){
@@ -472,11 +474,14 @@ public class DAN{
             IMqttToken t = client.disconnect();
             t.waitForCompletion(5000);
             onDisconnect();
+            logger.info("Successfully disconnect.");
         }
         else{
             IMqttToken t = client.disconnect();
             t.waitForCompletion(5000);
             onDisconnect(); //call custom onDisconnect
+            logger.info("Successfully disconnect.");
+            logger.info("\"persistent_binding\" didn't set to True. Auto deregister after disconnent." );
             deregister();    //deregister this device
         }
         
