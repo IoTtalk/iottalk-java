@@ -42,7 +42,7 @@ public class DAN{
     private String csmEndpoint;
     private String[] acceptProtos;
     private DeviceFeature[] dfList;
-    private AppID appID;
+    private AppID deviceAddr;
     private String dName;
     private JSONObject registerProfile;
     private JSONObject registerBodyJson;
@@ -100,7 +100,7 @@ public class DAN{
     public DAN(String _csmUrl, 
                String[] _acceptProtos, 
                DeviceFeature[] _dfList, 
-               AppID _id, 
+               AppID _deviceAddr, 
                String _name, 
                JSONObject _profile)
         throws JSONException, RegistrationError  {
@@ -110,7 +110,7 @@ public class DAN{
         csmEndpoint = _csmUrl;
         acceptProtos = _acceptProtos;
         dfList = _dfList;
-        appID = _id;
+        deviceAddr = _deviceAddr;
         dName = _name;
         registerProfile = _profile;
         iChans = new ChannelPool();
@@ -166,7 +166,7 @@ public class DAN{
             throw new RegistrationError("Already registered");
         }
         try{   
-            URL url = new URL(csmEndpoint+"/"+appID);
+            URL url = new URL(csmEndpoint+"/"+deviceAddr);
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
             conn.setRequestMethod("PUT");
             conn.setDoInput(true);
@@ -223,7 +223,7 @@ public class DAN{
         throws JSONException, MqttException, Exception
     {
         String mqttEndpoint = "tcp://"+mqttHost+":"+mqttPort;
-        client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+appID, new MemoryPersistence());
+        client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+deviceAddr, new MemoryPersistence());
         
         MqttConnectOptions options = new MqttConnectOptions();
         JSONObject setWillBody = new JSONObject();
@@ -249,7 +249,7 @@ public class DAN{
         IMqttToken token;
         if (isReconnectFlag == false){
             logger.info("Successfully connect to "+DANColor.wrap(DANColor.dataString, csmEndpoint)+".");
-            logger.info("Device ID: "+DANColor.wrap(DANColor.dataString, appID.toString())+".");
+            logger.info("Device ID: "+DANColor.wrap(DANColor.dataString, deviceAddr.toString())+".");
             logger.info("Device name: "+DANColor.wrap(DANColor.dataString, dName)+".");
             try{
                 token = client.subscribe(oChans.getTopic("ctrl"), 2, ctrlChansCB);
@@ -396,7 +396,7 @@ public class DAN{
             JSONObject deleteBody = new JSONObject();
             deleteBody.put("rev", rev);
 
-            URL url = new URL(csmEndpoint+"/"+appID);
+            URL url = new URL(csmEndpoint+"/"+deviceAddr);
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
             conn.setRequestMethod("DELETE");
             conn.setDoInput(true);
@@ -465,7 +465,7 @@ public class DAN{
         
         //if PersistentBinding flag is true, send offline.
         // else disconnect and deregister
-        if (appID.isPersistentBinding()){
+        if (deviceAddr.isPersistentBinding()){
             JSONObject publishBody = new JSONObject();
             publishBody.put("state", "offline");
             publishBody.put("rev", rev);
