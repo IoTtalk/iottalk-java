@@ -145,7 +145,7 @@ public class DAI extends Thread{
         }
     }
     
-    private boolean onSignal(String command, String df){
+    private boolean _onSignal(String command, String df){
         logger.info("Receive signal: "+DAIColor.wrap(DAIColor.dataString, command)+", "+df+".");
         if (command.equals("CONNECT")){
             if (pushDataTimerMap.containsKey(df)){
@@ -248,8 +248,7 @@ public class DAI extends Thread{
             dan = new DAN(csmEndpoint, acceptProtos, dfList, appId, dName, putBodyPorfile){
                 @Override
                 public boolean onSignal(String command, String df){
-                    //return true;
-                    return this.onSignal(command, df);
+                    return _onSignal(command, df);
                 }
                 @Override
                 public void onRegister(){
