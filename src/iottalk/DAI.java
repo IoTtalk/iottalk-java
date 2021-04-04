@@ -208,8 +208,8 @@ public class DAI extends Thread{
         }
         try{
             Class methodPT[] = m.getParameterTypes();
-            if (methodPT.length == 2 && methodPT[0] == DAN.class){
-              m.invoke(sa, dan, this);
+            if (methodPT.length == 1 && methodPT[0] == DAN.class){
+              m.invoke(sa, dan);
             }
             else{
               m.invoke(sa);
