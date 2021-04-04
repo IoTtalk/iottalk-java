@@ -207,7 +207,13 @@ public class DAI extends Thread{
             return;
         }
         try{
-            m.invoke(sa);
+            Class methodPT[] = m.getParameterTypes();
+            if (methodPT.length == 2 && methodPT[0] == DAN.class){
+              m.invoke(sa, dan, this);
+            }
+            else{
+              m.invoke(sa);
+            }
         } catch(Exception e){
             e.printStackTrace();
         }
