@@ -4,20 +4,20 @@
 實際的範例程式請參考 [Dummy_Device_IoTtalk_v2_java](https://github.com/IoTtalk/Dummy_Device_IoTtalk_v2_java) 。
 
 ## 需要的函式庫
-已經有放在資料夾 `libs` 裡面了，不用另外下載。
+使用指令 `make check_jar` 會自動下載所需 jar 的預設版本。
 * [org.json](https://mvnrepository.com/artifact/org.json/json) : 版本需求 >= 20131018
-* [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5) : 版本需求 == 1.2.5
+* [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5) : 版本需求 >= 1.2.5
 
 ## 如何使用
 有兩種方法。可以`使用 SA 版本`，或是`自行撰寫 DAI`
 ### 使用 SA 版本
-SA 版本 : 使用者只需要在 `SA.java` 中改變參數即可。
+SA 版本 : 使用者只需要在 `SA.java` 中改變參數即可，無需理會下方 DAI 的說明。
 連結 : [Dummy_Device_IoTtalk_v2_java](https://github.com/IoTtalk/Dummy_Device_IoTtalk_v2_java)
 ### 自行撰寫 DAI
-若對於 SA 版本的行為不滿足，可自行撰寫 main function，下方有[範例程式](#自定義DAI範例)及 class 定義[說明](#DAN-Classes-說明)
+若對於 SA 版本的行為不滿足，可自行撰寫 DAI (即程式的 main function)，下方有[範例程式](#自定義DAI範例)及 class 定義[說明](#DAN-Classes-說明)
 
 ### 將此函式庫打包成 jar 檔
-執行 `make iottalk.jar` ，將會自動產生 `iottalk.jar` ，供需要自行撰寫 dai 者使用。
+執行 `make iottalk.jar` ，將會自動產生 `iottalk.jar` ，供需要自行撰寫 DAI 者使用。
 
 ## 自定義DAI範例
 ```java=
@@ -44,6 +44,7 @@ public class DAI{
             }
         });
         aliveFlag = true;
+        
         try{
             String csmEndpoint = "http://localhost:9992/csm";
             String[] acceptProtos = {"mqtt"};
