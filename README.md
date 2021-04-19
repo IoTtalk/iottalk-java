@@ -3,13 +3,17 @@
 這是 IoTtalk v2 Java 版的函式庫。
 實際的範例程式請參考 [Dummy_Device_IoTtalk_v2_java](https://github.com/IoTtalk/Dummy_Device_IoTtalk_v2_java) 。
 
-## 需要的函式庫
-使用指令 `make check_jar` 會自動下載所需 jar 的預設版本。
-* [org.json](https://mvnrepository.com/artifact/org.json/json) : 版本需求 >= 20131018
-* [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5) : 版本需求 >= 1.2.5
+## 環境需求
+* [git](https://git-scm.com/book/zh-tw/v2/%E9%96%8B%E5%A7%8B-Git-%E5%AE%89%E8%A3%9D%E6%95%99%E5%AD%B8)
+* [make](https://askubuntu.com/questions/161104/how-do-i-install-make)
+* [OpenJDK](https://openjdk.java.net/install/) : JDK 版本需求 >= 8
+* 需要的 jar 函式庫 <br>
+**使用指令 `make check_jar` 會自動下載所需 jar 的預設版本。**
+   * [org.json](https://mvnrepository.com/artifact/org.json/json) : 版本需求 >= 20131018 , 預設版本 : 20210307
+   * [org.eclipse.paho.client.mqttv3](https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3/1.2.5) : 版本需求 >= 1.2.5 , 預設版本 : 1.2.5
 
 ## 如何使用
-有兩種方法。可以`使用 SA 版本`，或是`自行撰寫 DAI`
+有兩種版本。可以`使用 SA 版本`，或是`自行撰寫 DAI`
 ### 使用 SA 版本
 SA 版本 : 使用者只需要在 `SA.java` 中改變參數即可，無需理會下方 DAI 的說明。
 連結 : [Dummy_Device_IoTtalk_v2_java](https://github.com/IoTtalk/Dummy_Device_IoTtalk_v2_java)
@@ -20,7 +24,7 @@ SA 版本 : 使用者只需要在 `SA.java` 中改變參數即可，無需理會
 執行 `make iottalk.jar` ，將會自動產生 `iottalk.jar` ，供需要自行撰寫 DAI 者使用。
 
 ## 自定義DAI範例
-```java=
+```java
 package selfdefine;
 
 import iottalk.DAN;
@@ -115,7 +119,7 @@ public class DAI{
 
 Constructor
 ---
-```
+```java
 public DAN(String _csmUrl, String[] _acceptProtos,  DeviceFeature[] _dfList, AppID _deviceAddr, String _deviceName, JSONObject _profile)
 throws JSONException, RegistrationError
 ```
@@ -129,7 +133,7 @@ throws JSONException, RegistrationError
 
 Register
 ---
-```
+```java
 public void register()
 throws IOException, ProtocolException, MqttException, RegistrationError
 ```
@@ -138,7 +142,7 @@ DAN 向 iottalk v2 csm 註冊，並在註冊成功後自動連線。
 
 Push
 ---
-```
+```java
 public boolean push(String idfName, JSONArray data)
 throws MqttException, RegistrationError
 ```
@@ -159,7 +163,7 @@ On Singal
 
 Disconnect
 ---
-```
+```java
 public void disconnect()
 throws MqttException, RegistrationError, IOException, JSONException
 ```
@@ -177,8 +181,10 @@ throws MqttException, RegistrationError, IOException, JSONException
 ### Class `DeviceFeature`
 Constructor : 
 ---
-1. `public DeviceFeature(String df_name, String df_type)`
-2. `public DeviceFeature(String df_name, String df_type, String[] paramtype)`
+```java
+public DeviceFeature(String df_name, String df_type)
+public DeviceFeature(String df_name, String df_type, String[] paramtype)
+```
 
 建立 Device Feature
 * `df_name` : Device Feature 的名稱。ex : `Dummy_Sensor`
@@ -196,7 +202,7 @@ Pull Data Callback
 
 Push Data
 ---
-```
+```java
 public JSONArray getPushData()
 throws JSONException
 ```
@@ -206,14 +212,14 @@ throws JSONException
 
 toString
 ---
-```
+```java
 @Override
 public String toString()
 ```
 
 回傳 字串 `DFType`:`DFName`
 
-其他member function
+其他 member function
 ---
 與 DAN 互動會使用到，自行撰寫 DAI，可參考使用。
 * `public ArrayList<Object> getArrayList()` : 以 List 的格是回傳該 df 的資訊。(註冊 device 時會用到)
@@ -233,9 +239,11 @@ public String toString()
 
 Constructor : 
 ---
-1. `public AppID()`
-2. `public AppID(String uuidHexDigitString)`
-3. `public AppID(String uuidHexDigitString, boolean _persistent_binding)`
+```java
+public AppID()
+public AppID(String uuidHexDigitString)
+public AppID(String uuidHexDigitString, boolean _persistent_binding)
+```
 * `uuidHexDigitString` : 自訂的 device_addr，需為 Hex String。 ex : `aaaaa1234567890abcdef`
 
 | `mac_addr`\\`persistent_binding` | `true` | `false` |
@@ -252,7 +260,7 @@ public String toString()
 
 回傳 `device_addr` 的值。
 
-其他member function
+其他 member function
 ---
 與 DAN 互動會使用到，自行撰寫 DAI，可參考使用。
 * `public UUID getUUID()` : 取得 `device_addr`。回傳值的 class 為 `UUID` ，若需要取得字串，請用 `toString`。
