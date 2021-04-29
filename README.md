@@ -60,7 +60,7 @@ public class DAI{
             //DeviceFeature define
             DeviceFeature Dummy_Control = new DeviceFeature("Dummy_Control", "odf"){
                 @Override
-                public void pullDataCB(MqttMessage message, String df_name, String df_type){
+                public void pullDataCB(MqttMessage message, String df_name){
                     try{
                         JSONArray odfValue = new JSONArray(new String(message.getPayload(), "UTF-8"));
                         System.out.println(odfValue);
@@ -193,12 +193,11 @@ public DeviceFeature(String df_name, String df_type, String[] paramtype)
 
 **Pull Data Callback**
 
-`public void pullDataCB(MqttMessage message, String df_name, String df_type)`
+`public void pullDataCB(MqttMessage message, String df_name)`
 
 若此 df 為 ODF，當收到更新值時，會呼叫此 function。在建立 ODF object 時，必需 Override 此 function。 此函式是 DAN 中 ODF callback function 的目標。
 * `message` : 從 server 收到的訊息。
 * `df_name` : 該 Device Feature 的名稱。
-* `df_type` : `idf` or `odf`。
 
 **Push Data**
 
