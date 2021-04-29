@@ -21,7 +21,7 @@ public class DeviceFeature{
         @Override
         public void messageArrived(String topic, MqttMessage message){
             try{
-                pullDataCB(message, DFName, DFType);
+                pullDataCB(message, DFName);
             }
             catch(Exception e){
                 e.printStackTrace();
@@ -84,7 +84,7 @@ public class DeviceFeature{
         return MessageListener;
     }
     
-    public void pullDataCB(MqttMessage message, String df_name, String df_type){
+    public void pullDataCB(MqttMessage message, String df_name){
         return;
     }
     public JSONArray getPushData() throws JSONException{
