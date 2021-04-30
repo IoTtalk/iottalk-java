@@ -1,5 +1,8 @@
 package iottalk;
 
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
 import java.lang.Thread;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
@@ -27,13 +30,20 @@ import java.io.InterruptedIOException;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URLClassLoader;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
 public class DAI extends Thread{
-    private Logger logger = Logger.getLogger("DAI");
+    
+    private static Logger logger = null;
+    static {
+      System.setProperty("java.util.logging.SimpleFormatter.format",
+              "[%1$tF %1$tT] [%4$s] [%3$s] %5$s %n");
+      logger = Logger.getLogger("DAI");
+    }
     
     private boolean aliveFlag;
     private Object sa;
@@ -66,9 +76,7 @@ public class DAI extends Thread{
         sa = _sa;
         pushDataTimerMap = new HashMap<>();
         dfMap = new HashMap<>();
-        //Set log format
-        System.setProperty("java.util.logging.SimpleFormatter.format",
-              "[%1$tT] [%4$s] %5$s %n");
+              
     }
     
     public void terminate(){
@@ -137,7 +145,7 @@ public class DAI extends Thread{
         }
     }
     
-    private boolean _on_signal(String command, String df){
+    private boolean _onSignal(String command, String df){
         logger.info("Receive signal: "+DAIColor.wrap(DAIColor.dataString, command)+", "+df+".");
         if (command.equals("CONNECT")){
             if (pushDataTimerMap.containsKey(df)){
@@ -154,7 +162,7 @@ public class DAI extends Thread{
                   @Override
                   public void run() {
                       try{
-                          JSONArray pushDataJSONArray = dft.publishData();
+                          JSONArray pushDataJSONArray = dft.getPushData();
                           dan.push(df, pushDataJSONArray);
                       } catch(MqttException me){
                           me.printStackTrace();
@@ -199,7 +207,13 @@ public class DAI extends Thread{
             return;
         }
         try{
-            m.invoke(sa);
+            Class methodPT[] = m.getParameterTypes();
+            if (methodPT.length == 1 && methodPT[0] == DAN.class){
+              m.invoke(sa, dan);
+            }
+            else{
+              m.invoke(sa);
+            }
         } catch(Exception e){
             e.printStackTrace();
         }
@@ -239,31 +253,30 @@ public class DAI extends Thread{
             //new dan
             dan = new DAN(csmEndpoint, acceptProtos, dfList, appId, dName, putBodyPorfile){
                 @Override
-                public boolean on_signal(String command, String df){
-                    //return true;
-                    return _on_signal(command, df);
+                public boolean onSignal(String command, String df){
+                    return _onSignal(command, df);
                 }
                 @Override
-                public void on_register(){
+                public void onRegister(){
                     invokeMethod(onRegisterMethod);
                 }
                 @Override
-                public void on_deregister(){
+                public void onDeregister(){
                     invokeMethod(onDeregisterMethod);
                 }
                 @Override
-                public void on_connect(){
+                public void onConnect(){
                     invokeMethod(onConnectMethod);
                 }
                 @Override
-                public void on_disconnect(){
+                public void onDisconnect(){
                     invokeMethod(onDisconnectMethod);
                 }
             };
             
             dan.register();
             
-            logger.info("Successfully connect to "+DAIColor.wrap(DAIColor.dataString, "Press Ctrl+C to exit DAI")+".");
+            logger.info("Press Ctrl+C to exit DAI.");
             
             //busy wait
             //FIXME : use other impletation, this will block for a will
@@ -280,5 +293,47 @@ public class DAI extends Thread{
         } catch (Exception e){
             e.printStackTrace();
         }
+    }
+    
+    public static void main(String[] args)throws Exception{
+        String saURL = "";
+        String saClassName = "";
+        if (args.length > 0){
+            String splitPath[] = args[0].split("/");
+            if (splitPath.length == 1){
+                saURL = "file:./";
+                saClassName = splitPath[0].split(".class")[0];
+            }
+            else{
+                saURL = "file:"+splitPath[0]+"/";
+                for (int i=1; i<splitPath.length-1; i++){
+                    saURL = saURL+splitPath[i]+"/";
+                }
+                saClassName = splitPath[splitPath.length-1].split(".class")[0];
+            }
+            URL url = new URL(saURL);
+            ClassLoader urlClassLoader = new URLClassLoader(new URL[] {url});
+            Class c = urlClassLoader.loadClass(saClassName);
+            Object sa = c.getConstructor().newInstance();
+            logger.info("Successfully load SA from "+DAIColor.wrap(DAIColor.dataString, saURL+saClassName)+".");
+
+            DAI dai = new DAI(sa);
+
+            //Set signal handler to catch Ctrl+C
+            Signal.handle(new Signal("INT"), new SignalHandler() {
+                public void handle(Signal sig) {
+                    //System.out.println("Interrupt");
+                    System.out.println("");
+                    dai.terminate();
+                }
+            });
+            dai.start();
+            dai.join();
+            logger.info(DAIColor.wrap(DAIColor.dataString, "Terminate")+".");
+        }
+        else{
+            throw new IllegalArgumentException("SA path is null. Use \"java -cp <JAR PATH> iottalk.DAI <SA CLASS PATH>\".");
+        }
+        
     }
 }
