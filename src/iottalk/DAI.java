@@ -124,6 +124,9 @@ public class DAI extends Thread{
                 dfMap.put(dft.getDFName(), dft);
             }
         }
+        if (intervalMap == null){
+            intervalMap = new HashMap<String, Double>();
+        }
         //change Map to class array
         dfList = dfMap.values().toArray(new DeviceFeature[0]);
         
@@ -154,7 +157,13 @@ public class DAI extends Thread{
             DeviceFeature dft = dfMap.get(df);
             if (dft.isIDF()){
                 //count timer interval time
-                double ti = intervalMap.getOrDefault(df, new Double(pushInterval));
+                double ti;
+                if (intervalMap.containsKey(df)){
+                    ti = intervalMap.getOrDefault(df, new Double(pushInterval));
+                }
+                else{
+                    ti = pushInterval;
+                }
                 ti *= 1000;
                 
                 Timer timer = new Timer();

@@ -226,6 +226,7 @@ public class DAN{
         client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+deviceAddr, new MemoryPersistence());
         
         MqttConnectOptions options = new MqttConnectOptions();
+        options.setMaxInflight(dfList.length*2);
         JSONObject setWillBody = new JSONObject();
         setWillBody.put("state", "offline");
         setWillBody.put("rev", rev);
@@ -297,8 +298,8 @@ public class DAN{
             return true;
         }
         
-        IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 2, true);
-        token.waitForCompletion();
+        IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 0, true);
+        //token.waitForCompletion();
         return true;
     }
     
@@ -358,6 +359,7 @@ public class DAN{
                         handlingResult = onSignal(command, name); //call custom onSignal
                     }
                 }
+                
                 JSONObject publishBody = new JSONObject();
                 publishBody.put("msg_id", messageJSON.getString("msg_id"));
                 if (handlingResult){
@@ -369,8 +371,9 @@ public class DAN{
                 }
                 // FIXME: current v2 server implementation will ignore this message
                 //        We might fix this in v3
-                IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 2, true);
-                token.waitForCompletion();
+                IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 0, true);
+                //token.waitForCompletion();
+                
             }
         };
     
