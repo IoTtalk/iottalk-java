@@ -321,58 +321,80 @@ public class DAN{
             public void messageArrived(String topic, MqttMessage message)
                 throws JSONException, MqttException
             {
-                //get mqtt message
-                JSONObject messageJSON = new JSONObject(new String(message.getPayload()));
-                String command = messageJSON.getString("command");
-                boolean handlingResult = true;
-                //record df's topic name to ChannelPool,
-                //and subscribe odf's callback function
-                if (command.equals("CONNECT")){
-                    if (messageJSON.has("idf")){
-                        String pubTopic = messageJSON.getString("topic");
-                        String name = messageJSON.getString("idf");
-                        iChans.set(name, pubTopic);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+                try{
+                    //get mqtt message
+                    JSONObject messageJSON = new JSONObject(new String(message.getPayload()));
+                    String command = messageJSON.getString("command");
+                    boolean handlingResult = true;
+                    //record df's topic name to ChannelPool,
+                    //and subscribe odf's callback function
+                    if (command.equals("CONNECT")){
+                        if (messageJSON.has("idf")){
+                            String pubTopic = messageJSON.getString("topic");
+                            String name = messageJSON.getString("idf");
+                            iChans.set(name, pubTopic);
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                        }
+                        else if(messageJSON.has("odf")){
+                            String subTopic = messageJSON.getString("topic");
+                            String name = messageJSON.getString("odf");
+                            DeviceFeature dft = oChans.getDFCbyName(name);
+                            oChans.set(name, subTopic);
+                            if (dft == null){
+                                logger.info("ODF name "+DANColor.wrap(DANColor.dataString, name)+" not found, Skip.");
+                            }
+                            else{
+                                client.subscribe(subTopic, 0, dft.getCallBack());
+                            }
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                        }
                     }
-                    else if(messageJSON.has("odf")){
-                        String subTopic = messageJSON.getString("topic");
-                        String name = messageJSON.getString("odf");
-                        oChans.set(name, subTopic);
-                        DeviceFeature dft = oChans.getDFCbyName(name);
-                        handlingResult = onSignal(command, name); //call custom onSignal
-                        client.subscribe(subTopic, 0, dft.getCallBack());
+                    //remove df's topic name from ChannelPool,
+                    //and subscribe odf's callback function
+                    else if(command.equals("DISCONNECT")){
+                        if (messageJSON.has("idf")){
+                            String name = messageJSON.getString("idf");
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                            iChans.remove(name);
+                        }
+                        else if(messageJSON.has("odf")){
+                            String name = messageJSON.getString("odf");
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                            String subTopic = oChans.getTopic(name);
+                            DeviceFeature dft = oChans.getDFCbyName(name);
+                            oChans.remove(name);
+                            if (dft == null){
+                                logger.info("ODF name "+DANColor.wrap(DANColor.dataString, name)+" not found, Skip.");
+                            }
+                            else{
+                                client.unsubscribe(subTopic);
+                            }
+                        }
                     }
-                }
-                //remove df's topic name from ChannelPool,
-                //and subscribe odf's callback function
-                else if(command.equals("DISCONNECT")){
-                    if (messageJSON.has("idf")){
-                        String name = messageJSON.getString("idf");
-                        iChans.remove(name);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+
+                    JSONObject publishBody = new JSONObject();
+                    publishBody.put("msg_id", messageJSON.getString("msg_id"));
+                    if (handlingResult){
+                        publishBody.put("state", "ok");
                     }
-                    else if(messageJSON.has("odf")){
-                        String name = messageJSON.getString("odf");
-                        String subTopic = oChans.getTopic(name);
-                        oChans.remove(name);
-                        client.unsubscribe(subTopic);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+                    else{
+                        publishBody.put("state", "error");
+                        publishBody.put("state", "reason");
                     }
+                    // FIXME: current v2 server implementation will ignore this message
+                    //        We might fix this in v3
+                    IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 0, true);
+                    //token.waitForCompletion();
+                } catch(JSONException je){
+                    je.printStackTrace();
+                    throw(je);
+                } catch(MqttException me){
+                    me.printStackTrace();
+                    throw(me);
+                } catch(Exception e){
+                    e.printStackTrace();
+                    throw(e);
                 }
-                
-                JSONObject publishBody = new JSONObject();
-                publishBody.put("msg_id", messageJSON.getString("msg_id"));
-                if (handlingResult){
-                    publishBody.put("state", "ok");
-                }
-                else{
-                    publishBody.put("state", "error");
-                    publishBody.put("state", "reason");
-                }
-                // FIXME: current v2 server implementation will ignore this message
-                //        We might fix this in v3
-                IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 0, true);
-                //token.waitForCompletion();
                 
             }
         };

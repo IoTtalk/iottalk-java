@@ -155,6 +155,10 @@ public class DAI extends Thread{
                 return true;  //already connect
             }
             DeviceFeature dft = dfMap.get(df);
+            if (dft == null){
+                logger.info("DF name "+DAIColor.wrap(DAIColor.dataString, df)+" not found, Skip.");
+                return true;
+            }
             if (dft.isIDF()){
                 //count timer interval time
                 double ti;
@@ -188,6 +192,10 @@ public class DAI extends Thread{
         }
         else if (command.equals("DISCONNECT")){
             DeviceFeature dft = dfMap.get(df);
+            if (dft == null){
+                logger.info("DF name "+DAIColor.wrap(DAIColor.dataString, df)+" not found, Skip.");
+                return true;
+            }
             if (dft.isIDF()){
                 Timer timer = pushDataTimerMap.get(df);
                 timer.cancel();
