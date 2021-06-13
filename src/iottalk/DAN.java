@@ -49,6 +49,10 @@ public class DAN{
     
     private String mqttHost;
     private int mqttPort;
+    private String mqttScheme;
+    private String mqttUserName;
+    private String mqttPassword;
+    private boolean isMqttAuth;
     private String rev;
     
     private ChannelPool iChans;
@@ -203,6 +207,16 @@ public class DAN{
 
             mqttHost = metadata.getJSONObject("url").getString("host");
             mqttPort = metadata.getJSONObject("url").getInt("port");
+            mqttScheme = metadata.getJSONObject("url").getString("scheme");
+            isMqttAuth = false;
+            if (metadata.has("username")){
+                mqttUserName = metadata.getString("username");
+                if (metadata.has("password")){
+                    mqttPassword = metadata.getString("password");
+                    isMqttAuth = true;
+                }
+            }
+            
             rev = metadata.getString("rev");
             iChans.set("ctrl", metadata.getJSONArray("ctrl_chans").getString(0));
             oChans.set("ctrl", metadata.getJSONArray("ctrl_chans").getString(1));
@@ -222,7 +236,13 @@ public class DAN{
     private void connect()
         throws JSONException, MqttException, Exception
     {
-        String mqttEndpoint = "tcp://"+mqttHost+":"+mqttPort;
+        String mqttEndpoint;
+        if (mqttScheme.equals("mqtts")){
+            mqttEndpoint = "ssl://"+mqttHost+":"+mqttPort;
+        }
+        else{
+            mqttEndpoint = "tcp://"+mqttHost+":"+mqttPort;
+        }
         client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+deviceAddr, new MemoryPersistence());
         
         MqttConnectOptions options = new MqttConnectOptions();
@@ -231,6 +251,10 @@ public class DAN{
         setWillBody.put("state", "offline");
         setWillBody.put("rev", rev);
         options.setWill(iChans.getTopic("ctrl"), setWillBody.toString().getBytes(), 2, true);
+        if (isMqttAuth){
+            options.setUserName(mqttUserName);
+            options.setPassword(mqttPassword.toCharArray());
+        }
         
         //connect and wait
         IMqttToken token = client.connect(options);
