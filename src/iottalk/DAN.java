@@ -52,7 +52,6 @@ public class DAN{
     private String mqttScheme;
     private String mqttUserName;
     private String mqttPassword;
-    private boolean isMqttAuth;
     private String rev;
     
     private ChannelPool iChans;
@@ -208,14 +207,8 @@ public class DAN{
             mqttHost = metadata.getJSONObject("url").getString("host");
             mqttPort = metadata.getJSONObject("url").getInt("port");
             mqttScheme = metadata.getJSONObject("url").getString("scheme");
-            isMqttAuth = false;
-            if (metadata.has("username")){
-                mqttUserName = metadata.getString("username");
-                if (metadata.has("password")){
-                    mqttPassword = metadata.getString("password");
-                    isMqttAuth = true;
-                }
-            }
+            mqttUserName = metadata.optString("username", null);
+            mqttPassword = metadata.optString("password", null);
             
             rev = metadata.getString("rev");
             iChans.set("ctrl", metadata.getJSONArray("ctrl_chans").getString(0));
@@ -251,7 +244,7 @@ public class DAN{
         setWillBody.put("state", "offline");
         setWillBody.put("rev", rev);
         options.setWill(iChans.getTopic("ctrl"), setWillBody.toString().getBytes(), 2, true);
-        if (isMqttAuth){
+        if (mqttScheme.equals("mqtts")){
             options.setUserName(mqttUserName);
             options.setPassword(mqttPassword.toCharArray());
         }
@@ -323,7 +316,6 @@ public class DAN{
         }
         
         IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 0, true);
-        //token.waitForCompletion();
         return true;
     }
     
@@ -407,14 +399,8 @@ public class DAN{
                     }
                     // FIXME: current v2 server implementation will ignore this message
                     //        We might fix this in v3
-                    IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 0, true);
-                    //token.waitForCompletion();
-                } catch(JSONException je){
-                    je.printStackTrace();
-                    throw(je);
-                } catch(MqttException me){
-                    me.printStackTrace();
-                    throw(me);
+                    IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 2, true);
+                    token.waitForCompletion();
                 } catch(Exception e){
                     e.printStackTrace();
                     throw(e);

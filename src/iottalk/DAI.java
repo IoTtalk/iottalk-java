@@ -161,15 +161,7 @@ public class DAI extends Thread{
             }
             if (dft.isIDF()){
                 //count timer interval time
-                double ti;
-                if (intervalMap.containsKey(df)){
-                    ti = intervalMap.getOrDefault(df, new Double(pushInterval));
-                }
-                else{
-                    ti = pushInterval;
-                }
-                ti *= 1000;
-                
+                double ti = intervalMap.getOrDefault(df, pushInterval) * 1000;
                 Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                   @Override
