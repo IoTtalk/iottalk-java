@@ -319,6 +319,10 @@ public class DAN{
         return true;
     }
     
+    public String getDeviceID(){
+        return deviceAddr.toString();
+    }
+    
     /*
     Custom onSignal
     Can be overrided when init DAN
