@@ -239,7 +239,6 @@ public class DAN{
         client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+deviceAddr, new MemoryPersistence());
         
         MqttConnectOptions options = new MqttConnectOptions();
-        options.setMaxInflight(dfList.length*2);
         JSONObject setWillBody = new JSONObject();
         setWillBody.put("state", "offline");
         setWillBody.put("rev", rev);
