@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import java.net.URL;
 import java.net.HttpURLConnection;
@@ -31,6 +33,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
+
 public class DAN{
     private static Logger logger = null;
     static {
@@ -53,10 +56,17 @@ public class DAN{
     
     private ChannelPool iChans;
     private ChannelPool oChans;
+    private ExecutorService ctrlMessageProcessor = Executors.newSingleThreadExecutor();
     
     private MqttAsyncClient client;
     private boolean isReconnectFlag;
     private boolean isRegisterFlag;
+    
+    private int maxInflight=10;
+    
+    public void setMaxInflight(int maxInflight){
+        this.maxInflight=maxInflight<10?10:maxInflight;
+    }
     
     public class DANColor extends ColorBase{
         public String logger = "\033[1;35m";
@@ -226,6 +236,8 @@ public class DAN{
         client = new MqttAsyncClient(mqttEndpoint, "iottalk-py-"+deviceAddr, new MemoryPersistence());
         
         MqttConnectOptions options = new MqttConnectOptions();
+        options.setMaxInflight(maxInflight);
+        
         JSONObject setWillBody = new JSONObject();
         setWillBody.put("state", "offline");
         setWillBody.put("rev", rev);
@@ -297,8 +309,7 @@ public class DAN{
             return true;
         }
         
-        IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 2, true);
-        token.waitForCompletion();
+        IMqttToken token = client.publish(pubTopic, data.toString().getBytes(), 0, true);
         return true;
     }
     
@@ -316,63 +327,80 @@ public class DAN{
     
     // Set control channel calback
     IMqttMessageListener ctrlChansCB = new IMqttMessageListener() {
-            @Override
-            public void messageArrived(String topic, MqttMessage message)
-                throws JSONException, MqttException
-            {
-                //get mqtt message
-                JSONObject messageJSON = new JSONObject(new String(message.getPayload()));
-                String command = messageJSON.getString("command");
-                boolean handlingResult = true;
-                //record df's topic name to ChannelPool,
-                //and subscribe odf's callback function
-                if (command.equals("CONNECT")){
-                    if (messageJSON.has("idf")){
-                        String pubTopic = messageJSON.getString("topic");
-                        String name = messageJSON.getString("idf");
-                        iChans.set(name, pubTopic);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+        @Override
+        public void messageArrived(String topic, MqttMessage message) throws Exception
+        {
+            //the messageArrived method will be blocked and cannot receive new message util return
+            //so use another thread to process messages of control channel, otherwise on some low performance 
+            //or bad networking device (ex. smartphone, 4g network) will not be able to receive all messages of control channel
+            processCtrlChansMessage(topic, message);
+        }
+    };
+    
+    
+    private void processCtrlChansMessage(final String topic, final MqttMessage message) throws Exception {
+        // the control message has order (ex. connect -> disconnect),
+        //so use a single thread executor
+        if(!ctrlMessageProcessor.isShutdown())
+            ctrlMessageProcessor.execute(()->{
+                try{
+                    //get mqtt message
+                    JSONObject messageJSON = new JSONObject(new String(message.getPayload()));
+                    String command = messageJSON.getString("command");
+                    boolean handlingResult = true;
+
+                    //record df's topic name to ChannelPool,
+                    //and subscribe odf's callback function
+                    if (command.equals("CONNECT")){
+                        if (messageJSON.has("idf")){
+                            String pubTopic = messageJSON.getString("topic");
+                            String name = messageJSON.getString("idf");
+                            iChans.set(name, pubTopic);
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                        }
+                        else if(messageJSON.has("odf")){
+                            String subTopic = messageJSON.getString("topic");
+                            String name = messageJSON.getString("odf");
+                            oChans.set(name, subTopic);
+                            DeviceFeature dft = oChans.getDFCbyName(name);
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                            client.subscribe(subTopic, 0, dft.getCallBack());
+                        }
                     }
-                    else if(messageJSON.has("odf")){
-                        String subTopic = messageJSON.getString("topic");
-                        String name = messageJSON.getString("odf");
-                        oChans.set(name, subTopic);
-                        DeviceFeature dft = oChans.getDFCbyName(name);
-                        handlingResult = onSignal(command, name); //call custom onSignal
-                        client.subscribe(subTopic, 0, dft.getCallBack());
+                    else if(command.equals("DISCONNECT")){
+                        //remove df's topic name from ChannelPool,
+                        //and subscribe odf's callback function
+                        if (messageJSON.has("idf")){
+                            String name = messageJSON.getString("idf");
+                            iChans.remove(name);
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                        }
+                        else if(messageJSON.has("odf")){
+                            String name = messageJSON.getString("odf");
+                            String subTopic = oChans.getTopic(name);
+                            oChans.remove(name);
+                            client.unsubscribe(subTopic);
+                            handlingResult = onSignal(command, name); //call custom onSignal
+                        }
                     }
-                }
-                //remove df's topic name from ChannelPool,
-                //and subscribe odf's callback function
-                else if(command.equals("DISCONNECT")){
-                    if (messageJSON.has("idf")){
-                        String name = messageJSON.getString("idf");
-                        iChans.remove(name);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+                    JSONObject publishBody = new JSONObject();
+                    publishBody.put("msg_id", messageJSON.getString("msg_id"));
+                    if (handlingResult){
+                        publishBody.put("state", "ok");
                     }
-                    else if(messageJSON.has("odf")){
-                        String name = messageJSON.getString("odf");
-                        String subTopic = oChans.getTopic(name);
-                        oChans.remove(name);
-                        client.unsubscribe(subTopic);
-                        handlingResult = onSignal(command, name); //call custom onSignal
+                    else{
+                        publishBody.put("state", "error");
+                        publishBody.put("state", "reason");
                     }
-                }
-                JSONObject publishBody = new JSONObject();
-                publishBody.put("msg_id", messageJSON.getString("msg_id"));
-                if (handlingResult){
-                    publishBody.put("state", "ok");
-                }
-                else{
-                    publishBody.put("state", "error");
-                    publishBody.put("state", "reason");
-                }
-                // FIXME: current v2 server implementation will ignore this message
-                //        We might fix this in v3
-                IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 2, true);
-                token.waitForCompletion();
-            }
-        };
+                    // FIXME: current v2 server implementation will ignore this message
+                    //        We might fix this in v3
+                    IMqttToken token = client.publish(iChans.getTopic("ctrl"), publishBody.toString().getBytes(), 2, true);
+                    token.waitForCompletion();
+                } catch(Exception e){
+                    e.printStackTrace();
+                }        
+            });
+    }
     
     /*
     Custom onDisconnect
@@ -463,6 +491,8 @@ public class DAN{
             return;
         }
         
+        ctrlMessageProcessor.shutdown();
+        
         //if PersistentBinding flag is true, send offline.
         // else disconnect and deregister
         if (deviceAddr.isPersistentBinding()){
@@ -484,6 +514,5 @@ public class DAN{
             logger.info("\"persistent_binding\" didn't set to True. Auto deregister after disconnent." );
             deregister();    //deregister this device
         }
-        
     }
 }

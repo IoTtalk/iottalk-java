@@ -124,6 +124,9 @@ public class DAI extends Thread{
                 dfMap.put(dft.getDFName(), dft);
             }
         }
+        if (intervalMap == null){
+            intervalMap = new HashMap<String, Double>();
+        }
         //change Map to class array
         dfList = dfMap.values().toArray(new DeviceFeature[0]);
         
@@ -152,11 +155,13 @@ public class DAI extends Thread{
                 return true;  //already connect
             }
             DeviceFeature dft = dfMap.get(df);
+            if (dft == null){
+                logger.info("DF name "+DAIColor.wrap(DAIColor.dataString, df)+" not found, Skip.");
+                return true;
+            }
             if (dft.isIDF()){
                 //count timer interval time
-                double ti = intervalMap.getOrDefault(df, new Double(pushInterval));
-                ti *= 1000;
-                
+                double ti = intervalMap.getOrDefault(df, pushInterval) * 1000;
                 Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
                   @Override
@@ -179,6 +184,10 @@ public class DAI extends Thread{
         }
         else if (command.equals("DISCONNECT")){
             DeviceFeature dft = dfMap.get(df);
+            if (dft == null){
+                logger.info("DF name "+DAIColor.wrap(DAIColor.dataString, df)+" not found, Skip.");
+                return true;
+            }
             if (dft.isIDF()){
                 Timer timer = pushDataTimerMap.get(df);
                 timer.cancel();
